@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>PlanX 行程規劃</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #89f7fe, #66a6ff);
+        }
+        .card {
+            background: rgba(255, 255, 255, 0.25);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: 10px;
+            padding: 30px;
+            width: 360px;
+            color: #000;
+        }
+        h1 {
+            margin-top: 0;
+            text-align: center;
+        }
+        textarea {
+            width: 100%;
+            height: 80px;
+        }
+        pre {
+            background: rgba(255, 255, 255, 0.6);
+            padding: 10px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>PlanX</h1>
+        <div>
+            <label for="task">任務描述：</label><br>
+            <textarea id="task" placeholder="輸入想規劃的任務"></textarea>
+        </div>
+        <div>
+            <label for="days">天數：</label>
+            <input id="days" type="number" min="1" max="7" value="7">
+        </div>
+        <div>
+            <label for="apiKey">OpenAI API Key：</label>
+            <input id="apiKey" type="password" placeholder="sk-...">
+        </div>
+        <button id="generateBtn">產生行程表</button>
+        <pre id="output"></pre>
+    </div>
+    <script>
+        document.getElementById('generateBtn').addEventListener('click', async () => {
+            const task = document.getElementById('task').value.trim();
+            const days = document.getElementById('days').value;
+            const apiKey = document.getElementById('apiKey').value.trim();
+            const output = document.getElementById('output');
+            if (!apiKey) {
+                output.textContent = '請輸入有效的 API Key';
+                return;
+            }
+            output.textContent = '生成中...';
+            try {
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + apiKey
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-3.5-turbo',
+                        messages: [
+                            { role: 'system', content: '你是一個能提供詳細行程建議的助理。' },
+                            { role: 'user', content: `請以中文幫我安排「${task}」在接下來 ${days} 天的行程，列出每日計畫。` }
+                        ],
+                        temperature: 0.7
+                    })
+                });
+                const data = await response.json();
+                if (data.error) throw new Error(data.error.message);
+                output.textContent = data.choices[0].message.content.trim();
+            } catch (err) {
+                output.textContent = '發生錯誤：' + err.message;
+            }
+        });
+    </script>
+</body>
+</html>
